@@ -1,0 +1,144 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f7fc;
+}
+
+.flash-messages {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f8d7da;
+    border-radius: 5px;
+}
+
+.flash-messages .alert {
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #007bff;
+    padding: 10px 20px;
+    color: white;
+}
+
+.navbar .logo {
+    display: flex;
+    align-items: center;
+}
+
+.navbar .logo img {
+    margin-right: 10px;
+}
+
+.navbar .navbar-links {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar .navbar-links li {
+    margin-left: 20px;
+}
+
+.navbar .navbar-links li a {
+    color: white;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.navbar .navbar-links li a:hover {
+    background-color: #0056b3;
+}
+
+/* Dashboard Layout */
+.dashboard-container {
+    padding: 20px;
+}
+
+.dashboard-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.card-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    padding: 20px;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+}
+
+.card i {
+    font-size: 40px;
+    color: #007bff;
+}
+
+.card h3 {
+    font-size: 20px;
+    margin-top: 10px;
+}
+
+.card p {
+    color: #777;
+    margin-top: 10px;
+}
+
+.card .btn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 15px;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+}
+
+.card .btn:hover {
+    background-color: #0056b3;
+}
+
+footer {
+    text-align: center;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    margin-top: 20px;
+}

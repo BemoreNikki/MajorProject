@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Project Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to <strong style="color: blueviolet;">GNITS</strong> Student Project Management System</h1>
+        <div class="card-container">
+            <div class="card">
+                <i class="fas fa-user-shield icon"></i>
+                <h2>Admin Login</h2>
+                <p>Manage system settings and user roles.</p>
+                <a href="{{url_for('admin_login')}}" class="btn">Login</a>
+            </div>
+            <div class="card">
+                <i class="fas fa-user-tie icon"></i>
+                <h2>HOD Login</h2>
+                <p>Oversee departmental projects and assignments.</p>
+                <a href="/hod_login" class="btn">Login</a>
+            </div>
+            <div class="card">
+                <i class="fas fa-chalkboard-teacher icon"></i>
+                <h2>Mentor Login</h2>
+                <p>Guide students and evaluate their progress.</p>
+                <a href="/mentor_login" class="btn">Login</a>
+            </div>
+            <div class="card">
+                <i class="fas fa-user-graduate icon"></i>
+                <h2>Student Login</h2>
+                <p>Submit projects and check updates.</p>
+                <a href="/student_login" class="btn">Login</a>
+            </div>
+            <div class="card">
+                <i class="fas fa-users icon"></i>
+                <h2>Student Coordinator Login</h2>
+                <p>Coordinate with peers and assist teachers.</p>
+                <a href="/student_coordinator_login" class="btn">Login</a>
+            </div>
+            <div class="card">
+                <i class="fas fa-chalkboard icon"></i>
+                <h2>Teacher Login</h2>
+                <p>Review and grade student projects.</p>
+                <a href="/teacher_login" class="btn">Login</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

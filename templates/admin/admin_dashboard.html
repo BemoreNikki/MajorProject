@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin_dashboard.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" width="50">
+            <span>Student Project Management</span>
+        </div>
+        <ul class="navbar-links">
+            <li><a href="{{ url_for('home') }}">Home</a></li>
+            <li>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Admin Dashboard -->
+    <div class="dashboard-container">
+        <h2>Welcome, Admin</h2>
+
+        <!-- Card Container -->
+        <div class="card-container">
+            <!-- Card 1: Add HOD -->
+            <div class="card">
+                <i class="fas fa-user-tie"></i>
+                <h3>Add HOD</h3>
+                <p>Add and manage Heads of Departments.</p>
+                <a href="/add_hod" class="btn">Add HOD</a>
+            </div>
+            
+            <!-- Card 2: Add Mentor -->
+            <div class="card">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <h3>Add Mentor</h3>
+                <p>Add and manage mentors for student projects.</p>
+                <a href="/add_mentor" class="btn">Add Mentor</a>
+            </div>
+
+            <!-- Card 3: Add Student -->
+            <div class="card">
+                <i class="fas fa-user-graduate"></i>
+                <h3>Add Student</h3>
+                <p>Add and manage students for projects.</p>
+                <a href="/add_student" class="btn">Add Student</a>
+            </div>
+
+            <!-- Card 4: Add Student Coordinator -->
+            <div class="card">
+                <i class="fas fa-users"></i>
+                <h3>Add Student Coordinator</h3>
+                <p>Add and manage student coordinators.</p>
+                <a href="/add_student_coordinator" class="btn">Add Student Coordinator</a>
+            </div>
+
+            <!-- Card 5: Add Teacher Coordinator -->
+            <div class="card">
+                <i class="fas fa-user-cog"></i>
+                <h3>Add Teacher Coordinator</h3>
+                <p>Add and manage teacher coordinators.</p>
+                <a href="/add_teacher_coordinator" class="btn">Add Teacher Coordinator</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Student Project Management System</p>
+    </footer>
+</body>
+</html>
