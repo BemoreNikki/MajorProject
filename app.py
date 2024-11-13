@@ -114,9 +114,34 @@ def hod_dashboard():
 def mentor_login():
     return "<h2>Mentor Login Page</h2>"
 
-@app.route('/student_login')
+
+# student login--------------------------------------
+@app.route('/student_login', methods=['GET', 'POST'])
 def student_login():
-    return "<h2>Student Login Page</h2>"
+    if request.method == 'POST':
+        
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        
+        students = db['students'].find_one({"username": username})
+        
+        if students and students['password'] == password:  
+            session['student_logged_in'] = True
+            flash('Login successful!', 'success')
+            return redirect(url_for('student_dashboard')) 
+        else:
+            flash('Invalid username or password. Please try again.', 'danger')
+            return redirect(url_for('student_login')) 
+    
+    return render_template('student/student_login.html')  
+
+# end of hod_login------------------------------------------------------------
+
+@app.route('/student_dashboard')
+def student_dashboard():
+    return render_template('student/student_dashboard.html') 
+# student login end-------------------------------------
 
 @app.route('/student_coordinator_login')
 def student_coordinator_login():
@@ -278,6 +303,7 @@ def add_student():
 
         # Insert student into MongoDB
         student_data = {
+            "username": username,
             "student_name": student_name,
             "department": department,
             "semester": semester,
