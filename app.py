@@ -1,11 +1,16 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from pymongo import MongoClient
 
 import random
 import string
 import smtplib
 from email.mime.text import MIMEText
-from pymongo import MongoClient
+from bson import ObjectId
+
+
+from werkzeug.utils import secure_filename
+import os
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -123,18 +128,19 @@ def student_login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        
         students = db['students'].find_one({"username": username})
         
         if students and students['password'] == password:  
             session['student_logged_in'] = True
+            session['user_id'] = str(students['_id'])  # Store the student user_id in session
             flash('Login successful!', 'success')
             return redirect(url_for('student_dashboard')) 
         else:
             flash('Invalid username or password. Please try again.', 'danger')
             return redirect(url_for('student_login')) 
     
-    return render_template('student/student_login.html')  
+    return render_template('student/student_login.html')
+  
 
 # end of hod_login------------------------------------------------------------
 
@@ -326,6 +332,93 @@ def add_student():
     return render_template('add_student.html')
 
 #add student end--------------------------------------------------
+
+
+# upload document------------------------------------------------------
+
+
+# Ensure the uploads directory exists
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+# Allowed file extensions for document upload
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
+
+# Helper function to check if the uploaded file is valid
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload_document', methods=['POST'])
+def upload_document():
+    if 'user_id' not in session:
+        flash('You need to log in first.', 'danger')
+        return redirect(url_for('student_login'))
+
+    # Debugging step: Print session user_id
+    print("Session User ID:", session.get('user_id'))
+    
+    if request.method == 'POST':
+        # Get form data
+        project_name = request.form['project_name']
+        project_description = request.form['project_description']
+        team_members = request.form.getlist('team_members[]')
+        document = request.files['document']
+
+        # Ensure a document is uploaded
+        if not document or document.filename == '':
+            flash('No document selected!', 'danger')
+            return redirect(url_for('student_dashboard'))
+
+        # Check if the file has an allowed extension
+        if not allowed_file(document.filename):
+            flash('Invalid file type. Only PDF and Word documents are allowed.', 'danger')
+            return redirect(url_for('student_dashboard'))
+
+        # Secure and save the document
+        filename = secure_filename(document.filename)
+        document_path = os.path.join(UPLOAD_FOLDER, filename)
+        document.save(document_path)
+
+        # Get logged-in user's details (assuming you have a function to get the user from session)
+        user_id = session.get('user_id')
+        if user_id:
+            try:
+                user = db['students'].find_one({"_id": ObjectId(user_id)})  # Convert to ObjectId
+            except Exception as e:
+                print("Error querying database:", e)
+                user = None
+        else:
+            user = None
+
+        if user is None:
+            flash('User not found!', 'danger')
+            return redirect(url_for('student_login'))
+
+        # Prepare the document data to store in MongoDB
+        document_data = {
+            'student_username': user['username'],  # Store logged-in student username
+            'student_name': user['student_name'],  # Store logged-in student name
+            'project_name': project_name,
+            'project_description': project_description,
+            'team_members': team_members,
+            'document_path': document_path,
+            'upload_date': datetime.utcnow()  # Store the current date and time
+        }
+
+        # Insert the document data into MongoDB
+        db['projects'].insert_one(document_data)
+
+        flash('Document uploaded successfully!', 'success')
+        return redirect(url_for('student_dashboard'))
+
+
+# Helper function to get the logged-in user
+def get_logged_in_user():
+    user_id = session.get('user_id')
+    if user_id:
+        user = db['students'].find_one({"_id": ObjectId(user_id)})  # Query by user_id to fetch the user details
+    return None  # Return None if no user is logged in
 
 if __name__ == '__main__':
     app.run(debug=True)

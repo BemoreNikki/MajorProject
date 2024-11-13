@@ -1,11 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='student_dashboard.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
+
 <body>
-    Welcome Student
+    <!-- Navbar -->
+    <header>
+        <nav class="navbar">
+            <ul>
+                <li><a href="/home">Home</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="dashboard-container">
+        <h1>Student Dashboard</h1>
+        <div class="cards-container">
+            <!-- Card 1: Uploading Document -->
+            <div class="card" id="uploading-doc" onclick="openUploadDocumentModal()">
+                <i class="fas fa-upload"></i>
+                <h3>Uploading Document</h3>
+                <p>Upload your project documents for review and feedback.</p>
+                <a href="javascript:void(0)" class="btn">Upload</a>
+            </div>
+
+
+            <!-- Upload Document Modal -->
+            <div id="uploadDocumentModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="closeUploadDocumentModal()">&times;</span>
+                    <h3>Upload Document</h3>
+                    <form action="{{ url_for('upload_document') }}" method="POST" enctype="multipart/form-data">
+                        <!-- Project Name -->
+                        <label for="project_name">Project Name</label>
+                        <input type="text" id="project_name" name="project_name" required>
+
+                        <!-- Upload Document -->
+                        <label for="document">Upload Document (PDF or Word)</label>
+                        <input type="file" id="document" name="document" accept=".pdf,.doc,.docx" required>
+
+                        <!-- My Team (Add Members dynamically) -->
+                        <label for="team">My Team</label>
+                        <div id="team-members">
+                            <div class="team-member">
+                                <input type="text" name="team_members[]" placeholder="Member Name" required>
+                                <button type="button" class="add-member-btn" onclick="addTeamMember()">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Project Description -->
+                        <label for="project_description">Project Description</label>
+                        <textarea id="project_description" name="project_description" rows="4" required></textarea>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn">Submit</button>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- upload document end -->
+
+            <!-- Card 2: Update Project Details -->
+            <div class="card" id="update-project">
+                <i class="fas fa-edit"></i>
+                <h3>Update Project Details</h3>
+                <p>Update your project details as necessary.</p>
+                <a href="/update_project" class="btn">Update</a>
+            </div>
+
+            <!-- Card 3: Project Status -->
+            <div class="card" id="project-status">
+                <i class="fas fa-tasks"></i>
+                <h3>Project Status</h3>
+                <p>Check the current status of your project.</p>
+                <a href="/project_status" class="btn">View Status</a>
+            </div>
+
+            <!-- Card 4: Project PRC Status -->
+            <div class="card" id="project-prc-status">
+                <i class="fas fa-clipboard-list"></i>
+                <h3>Project PRC Status</h3>
+                <p>View the status of your Project PRC.</p>
+                <a href="/prc_status" class="btn">View PRC</a>
+            </div>
+
+            <!-- Card 5: View Reviews -->
+            <div class="card" id="view-reviews">
+                <i class="fas fa-comments"></i>
+                <h3>View Reviews</h3>
+                <p>Check the reviews and feedback on your project.</p>
+                <a href="/view_reviews" class="btn">View Reviews</a>
+            </div>
+
+            <!-- Card 6: My Team -->
+            <div class="card" id="my-team">
+                <i class="fas fa-users"></i>
+                <h3>My Team</h3>
+                <p>View the members of your project team.</p>
+                <a href="/my_team" class="btn">View Team</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript for Modal if needed -->
+    <script>
+        // Open the modal
+        function openUploadDocumentModal() {
+            document.getElementById('uploadDocumentModal').style.display = 'block';
+        }
+
+        // Close the modal
+        function closeUploadDocumentModal() {
+            document.getElementById('uploadDocumentModal').style.display = 'none';
+        }
+
+        // Dynamically add team member input fields
+        function addTeamMember() {
+            const teamMembersDiv = document.getElementById('team-members');
+            const newMemberDiv = document.createElement('div');
+            newMemberDiv.classList.add('team-member');
+            newMemberDiv.innerHTML = `
+        <input type="text" name="team_members[]" placeholder="Member Name" required>
+        <button type="button" class="remove-member-btn" onclick="removeTeamMember(this)">-</button>
+    `;
+            teamMembersDiv.appendChild(newMemberDiv);
+        }
+
+        // Remove team member input field
+        function removeTeamMember(button) {
+            button.parentElement.remove();
+        }
+
+    </script>
 </body>
+
 </html>
