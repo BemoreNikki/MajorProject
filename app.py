@@ -82,7 +82,7 @@ def logout():
     return redirect(url_for('home'))
 
 
-# hod_logim
+# hod_login--------------------------------------------------
 
 @app.route('/hod_login', methods=['GET', 'POST'])
 def hod_login():
@@ -104,7 +104,7 @@ def hod_login():
     
     return render_template('hod/hod_login.html')  # Render HOD login page
 
-# end of hod_logi
+# end of hod_login------------------------------------------------------------
 
 @app.route('/hod_dashboard')
 def hod_dashboard():
@@ -241,6 +241,65 @@ def add_mentor():
     return redirect(url_for('admin_dashboard'))
 
 #add mentor end-----------------------------------------------------
+
+
+#add student----------------------------------------------------------
+@app.route('/add_student', methods=['GET', 'POST'])
+def add_student():
+    if request.method == 'POST':
+        # Form data
+        username = request.form.get('username')
+        student_name = request.form.get('student_name')
+        department = request.form.get('department')
+        semester = request.form.get('semester')
+        roll_number = request.form.get('roll_number')
+        contact_number = request.form.get('contact_number')
+        email = request.form.get('email')
+        address = request.form.get('address')
+        section = request.form.get('section')
+        from_year = request.form.get('from_year')
+        to_year = request.form.get('to_year')
+
+        # Check if a student with the same roll number or email already exists
+        existing_student = db['students'].find_one({
+            "$or": [
+                {"roll_number": roll_number},
+                {"email": email},
+                {"username": username},
+                {"contact_number": contact_number}
+            ]
+        })
+
+        if existing_student:
+            flash('A student with the same roll number or email already exists.', 'danger')
+            return redirect(url_for('add_student'))
+        
+        password = generate_password()
+
+        # Insert student into MongoDB
+        student_data = {
+            "student_name": student_name,
+            "department": department,
+            "semester": semester,
+            "roll_number": roll_number,
+            "contact_number": contact_number,
+            "email": email,
+            "address": address,
+            "section": section,
+            "from_year": from_year,
+            "to_year": to_year,
+            "password": password
+        }
+        db['students'].insert_one(student_data)
+        
+        send_login_details(email, username, password)
+
+        flash('Student added successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+
+    return render_template('add_student.html')
+
+#add student end--------------------------------------------------
 
 if __name__ == '__main__':
     app.run(debug=True)
