@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Team</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='student_dashboard.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <ul>
+                <li><a href="{{ url_for('student_dashboard')}}">Home</a></li>
+                <li><a href="{{ url_for('logout')}}">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">My Team</h1>
+
+        <!-- Check if there are projects -->
+        {% if project_teams %}
+            <div class="accordion" id="teamAccordion">
+                {% for project in project_teams %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ loop.index }}">
+                        <button class="accordion-button {{ 'collapsed' if not loop.first }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="collapse{{ loop.index }}">
+                            {{ project['project_name'] }}
+                        </button>
+                    </h2>
+                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {{ 'show' if loop.first }}" aria-labelledby="heading{{ loop.index }}" data-bs-parent="#teamAccordion">
+                        <div class="accordion-body">
+                            <!-- Check if the project has team members -->
+                            {% if project['team_members'] %}
+                                <div class="row">
+                                    {% for member in project['team_members'] %}
+                                    <div class="col-md-4 col-sm-6 mb-4">
+                                        <div class="card shadow">
+                                            <div class="card-body text-center">
+                                                <div class="mb-3">
+                                                    <img src="/static/images/team1.png" alt="{{ member }}" class="rounded-circle img-fluid" style="width: 80px; height: 80px;">
+                                                </div>
+                                                <h5 class="card-title">{{ member }}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p>No team members assigned to this project.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+        <p class="text-center">No projects or team members found.</p>
+        {% endif %}
+    </div>
+
+    <!-- Include Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

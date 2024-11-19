@@ -10,16 +10,14 @@
 </head>
 
 <body>
-    <!-- Navbar -->
     <header>
         <nav class="navbar">
             <ul>
-                <li><a href="/home">Home</a></li>
-                <li><a href="/logout">Logout</a></li>
+                <li><a href="{{ url_for('student_dashboard')}}">Home</a></li>
+                <li><a href="{{ url_for('logout')}}">Logout</a></li>
             </ul>
         </nav>
     </header>
-
 
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -91,6 +89,8 @@
                 <a href="/update_project" class="btn">Update</a>
             </div>
 
+            <!-- end of update pro -->
+
             <!-- Card 3: Project Status -->
             <div class="card" id="project-status">
                 <i class="fas fa-tasks"></i>
@@ -120,7 +120,7 @@
                 <i class="fas fa-users"></i>
                 <h3>My Team</h3>
                 <p>View the members of your project team.</p>
-                <a href="/my_team" class="btn">View Team</a>
+                <a href="{{ url_for('my_team')}}" class="btn">View Team</a>
             </div>
         </div>
     </main>

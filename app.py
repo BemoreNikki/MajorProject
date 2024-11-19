@@ -80,12 +80,6 @@ def admin_dashboard():
     # Render dashboard with departments
     return render_template('admin/admin_dashboard.html', departments=departments)
 
-@app.route('/logout')
-def logout():
-    session.pop('admin_logged_in', None)
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('home'))
-
 
 # hod_login--------------------------------------------------
 
@@ -132,7 +126,11 @@ def student_login():
         
         if students and students['password'] == password:  
             session['student_logged_in'] = True
-            session['user_id'] = str(students['_id'])  # Store the student user_id in session
+            session['user_id'] = str(students['_id'])
+            projects = db['projects'].find({"student_username": session.get('user_id')})
+
+            # Convert the cursor to a list of projects
+            projects = list(projects)
             flash('Login successful!', 'success')
             return redirect(url_for('student_dashboard')) 
         else:
@@ -338,7 +336,7 @@ def add_student():
 
 
 # Ensure the uploads directory exists
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = 'static/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -377,7 +375,7 @@ def upload_document():
 
         # Secure and save the document
         filename = secure_filename(document.filename)
-        document_path = os.path.join(UPLOAD_FOLDER, filename)
+        document_path = os.path.join('static', 'uploads', filename)  # Save under static/uploads/
         document.save(document_path)
 
         # Get logged-in user's details (assuming you have a function to get the user from session)
@@ -402,7 +400,7 @@ def upload_document():
             'project_name': project_name,
             'project_description': project_description,
             'team_members': team_members,
-            'document_path': document_path,
+            'document_path': os.path.join('uploads', filename),
             'upload_date': datetime.utcnow()  # Store the current date and time
         }
 
@@ -419,6 +417,142 @@ def get_logged_in_user():
     if user_id:
         user = db['students'].find_one({"_id": ObjectId(user_id)})  # Query by user_id to fetch the user details
     return None  # Return None if no user is logged in
+
+
+# end of upload document
+
+
+
+
+
+# update project details----------------------------------------------------------
+
+
+@app.route('/update_project', methods=['GET'])
+def update_project():
+    if 'user_id' not in session:
+        flash('You need to log in first.', 'danger')
+        return redirect(url_for('student_login'))
+
+    # Fetch all projects for the logged-in user
+    user_id = session.get('user_id')
+    if user_id:
+        try:
+            user = db['students'].find_one({"_id": ObjectId(user_id)})
+            projects = db['projects'].find({"student_username": user['username']})  # Query projects for this student
+        except Exception as e:
+            print("Error querying database:", e)
+            projects = []
+    else:
+        projects = []
+
+    # Pass the projects data to the template
+    return render_template('student/update_project.html', projects=projects)
+
+
+
+@app.route('/edit_project/<project_id>', methods=['GET', 'POST'])
+def edit_project(project_id):
+    if 'user_id' not in session:
+        flash('You need to log in first.', 'danger')
+        return redirect(url_for('student_login'))
+
+    project = db['projects'].find_one({"_id": ObjectId(project_id)})
+
+    if request.method == 'POST':
+        # Update the project details
+        project_name = request.form['project_name']
+        project_description = request.form['project_description']
+        team_members = request.form.getlist('team_members[]')
+
+        # Check if a document is uploaded
+        document = request.files.get('document')
+        if document:
+            # Ensure the file is of allowed type (e.g., PDF, Word)
+            if not allowed_file(document.filename):
+                flash('Invalid file type. Only PDF and Word documents are allowed.', 'danger')
+                return redirect(url_for('edit_project', project_id=project_id))
+
+            # Secure and save the document
+            filename = secure_filename(document.filename)
+            document_path = os.path.join('static', 'uploads', filename)  # Save under static/uploads/
+            document.save(document_path)
+
+            # Add document path to the project data
+            project_data = {
+                'document_path': document_path
+            }
+        else:
+            project_data = {}
+
+        # Update the project in MongoDB
+        db['projects'].update_one(
+            {"_id": ObjectId(project_id)},
+            {"$set": {
+                "project_name": project_name,
+                "project_description": project_description,
+                "team_members": team_members,
+                **project_data  # Include document path if it was uploaded
+            }}
+        )
+
+        flash('Project updated successfully!', 'success')
+        return redirect(url_for('update_project'))
+
+    return render_template('student/edit_project.html', project=project)
+
+
+
+@app.route('/delete_project/<project_id>', methods=['POST'])
+def delete_project(project_id):
+    try:
+        # Find the project in the database
+        result = db['projects'].delete_one({'_id': ObjectId(project_id)})
+        
+        if result.deleted_count > 0:
+            flash('Project deleted successfully!', 'success')
+        else:
+            flash('Project not found!', 'danger')
+        
+    except Exception as e:
+        flash(f'Error deleting project: {e}', 'danger')
+    
+    return redirect(url_for('update_project'))  # Redirect back to the project list
+
+
+
+
+
+
+# end of update project details-----------------------------------------------
+
+#my team-----------------------------
+@app.route('/my_team')
+def my_team():
+    # Fetch all projects from the database
+    projects = list(db.projects.find())  # Replace with your database query
+    
+    # Format the data to include project name with team members
+    project_teams = [
+        {"project_name": project['project_name'], "team_members": project.get('team_members', [])}
+        for project in projects
+    ]
+    
+    return render_template('student/my_team.html', project_teams=project_teams)
+
+
+
+
+#my team end-------------------------------
+
+
+#logout------------------------
+@app.route('/logout')
+def logout():
+    # Clear the entire session
+    session.clear()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(debug=True)
