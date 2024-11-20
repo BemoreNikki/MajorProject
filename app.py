@@ -27,7 +27,7 @@ def send_login_details(to_email, username, password):
     sender_password = "svjnearjremyufje"
     
     # Email content
-    subject = "Your HOD Account Details"
+    subject = "Your GNITS Account Details"
     body = f"Hello,\n\nWELCOME to GNITS Project Management System your account has been created.\n\nUsername: {username}\nPassword: {password}\n\nPlease log in to the system."
     
     # Setup MIME
@@ -103,16 +103,37 @@ def hod_login():
     
     return render_template('hod/hod_login.html')  # Render HOD login page
 
-# end of hod_login------------------------------------------------------------
 
 @app.route('/hod_dashboard')
 def hod_dashboard():
     return render_template('hod/hod_dashboard.html') 
 
-@app.route('/mentor_login')
-def mentor_login():
-    return "<h2>Mentor Login Page</h2>"
+# end of hod_login------------------------------------------------------------
 
+# mentor login and logics-----------------------------------
+@app.route('/mentor_login', methods=['GET', 'POST'])
+def mentor_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        mentor = db['mentor'].find_one({"username": username})
+        
+        if mentor and mentor['password'] == password:
+            session['mentor_logged_in'] = True
+            flash('Login successful!', 'success')
+            return redirect(url_for('mentor_dashboard'))
+        else:
+            flash('Invalid username or password. Plese try again.', 'danger')
+            return redirect(url_for('mentor_login'))
+    return render_template('mentor/mentor_login.html')
+
+
+@app.route('/mentor_dashboard')
+def mentor_dashboard():
+    return render_template('mentor/mentor_dashboard.html')
+
+#mentor logics end ---------------------------------------------------------
 
 # student login--------------------------------------
 @app.route('/student_login', methods=['GET', 'POST'])
@@ -330,6 +351,54 @@ def add_student():
     return render_template('add_student.html')
 
 #add student end--------------------------------------------------
+
+
+#add_student_coordinator---------------------------------------------
+#add mentor----------------------------------------------------
+@app.route('/add_student_coordinator', methods=['POST'])
+def add_student_coordinator():
+    # Form data
+    username = request.form.get('username')
+    name = request.form.get('name')
+    department = request.form.get('department')
+    contact_number = request.form.get('contact_number')
+    email = request.form.get('email')
+    address = request.form.get('address')
+    
+    
+    existing_student_coordinator = db['student_coordinator'].find_one({
+        "$or": [
+            {"username": username},
+            {"name": name},
+            {"email": email},
+            {"contact_number": contact_number}
+        ]
+    })
+    
+    if existing_student_coordinator:
+        flash('Student Coordinator with the same name, email, or contact number already exists.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    
+    password = generate_password()
+    
+    
+    student_coordinator_data = {
+        "username": username,
+        "name": name,
+        "department": department,
+        "contact_number": contact_number,
+        "email": email,
+        "address": address,
+        "password": password  
+    }
+    db['student_coordinator'].insert_one(student_coordinator_data)
+    
+    send_login_details(email, username, password)
+    
+    flash('Student Coordinator added successfully and login details sent!', 'success')
+    return redirect(url_for('admin_dashboard'))
+#student_coordinator_end---------------------------------------------
 
 
 # upload document------------------------------------------------------
