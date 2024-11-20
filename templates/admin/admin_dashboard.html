@@ -247,11 +247,45 @@
                 <a href="/update_student_coordinator" class="btn">Update</a>
             </div>
 
-            <div class="card">
-                <i class="fas fa-user-cog"></i>
+            <!-- Add Teacher Coordinator -->
+            <div class="card" onclick="openTeachercoModal()">
+                <i class="fas fa-user-tie"></i>
                 <h3>Add Teacher Coordinator</h3>
-                <a href="/add_teacher_coordinator" class="btn">Add</a>
+                <a class="btn">Add</a>
             </div>
+
+            <div id="teachercoModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="closeTeachercoModal()">&times;</span>
+                    <h3>Add Teacher Coordinator</h3>
+                    <form action="{{ url_for('add_teacher_coordinator') }}" method="POST">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required>
+
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" required>
+
+                        <label for="department">Department</label>
+                        <select id="department" name="department" required>
+                            {% for department in departments %}
+                            <option value="{{ department }}">{{ department }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <label for="contact">Contact Number</label>
+                        <input type="text" id="contact" name="contact" required>
+
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+
+                        <label for="address">Address</label>
+                        <input type="text" id="address" name="address" required>
+
+                        <button type="submit" class="btn">Submit</button>
+                    </form>
+                </div>
+            </div>
+             <!-- Teacher Coordinator End -->
             <div class="card">
                 <i class="fas fa-user-edit"></i>
                 <h3>Update Teacher Coordinator</h3>
@@ -382,6 +416,24 @@
         // Close modal when clicking outside of it
         window.onclick = function (event) {
             var modal = document.getElementById("studentcoModal");
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };   
+
+    </script>
+    <script>       
+        function openTeachercoModal() {
+            document.getElementById("teachercoModal").style.display = "block";
+        }
+
+        function closeTeachercoModal() {
+            document.getElementById("teachercoModal").style.display = "none";
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function (event) {
+            var modal = document.getElementById("teachercoModal");
             if (event.target == modal) {
                 modal.style.display = "none";
             }

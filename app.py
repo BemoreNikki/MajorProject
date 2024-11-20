@@ -135,6 +135,56 @@ def mentor_dashboard():
 
 #mentor logics end ---------------------------------------------------------
 
+# student coordinator login and logics-----------------------------------
+@app.route('/student_coordinator_login', methods=['GET', 'POST'])
+def student_coordinator_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        student_coordinator = db['student_coordinator'].find_one({"username": username})
+        
+        if student_coordinator and student_coordinator['password'] == password:
+            session['student_coordinator_logged_in'] = True
+            flash('Login successful!', 'success')
+            return redirect(url_for('student_coordinator_dashboard'))
+        else:
+            flash('Invalid username or password. Plese try again.', 'danger')
+            return redirect(url_for('student_coordinator_login'))
+    return render_template('student_coordinator/student_coordinator_login.html')
+
+
+@app.route('/student_coordinator_dashboard')
+def student_coordinator_dashboard():
+    return render_template('student_coordinator/student_coordinator_dashboard.html')
+
+#student coordinator logics end ---------------------------------------------------------
+
+
+# teacher coordinator login---------------------------------------
+@app.route('/teacher_coordinator_login', methods=['GET', 'POST'])
+def teacher_coordinator_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        teacher_coordinator = db['teacher_coordinator'].find_one({"username": username})
+        
+        if teacher_coordinator and teacher_coordinator['password'] == password:
+            session['teacher_coordinator_logged_in'] = True
+            flash('Login successful!', 'success')
+            return redirect(url_for('teacher_coordinator_dashboard'))
+        else:
+            flash('Invalid username or password. Plese try again.', 'danger')
+            return redirect(url_for('teacher_coordinator_login'))
+    return render_template('teacher_coordinator/teacher_coordinator_login.html')
+
+
+@app.route('/teacher_coordinator_dashboard')
+def teacher_coordinator_dashboard():
+    return render_template('teacher_coordinator/teacher_coordinator_dashboard.html')
+# teacher coordinator login end -----------------------------------
+
 # student login--------------------------------------
 @app.route('/student_login', methods=['GET', 'POST'])
 def student_login():
@@ -167,15 +217,6 @@ def student_login():
 def student_dashboard():
     return render_template('student/student_dashboard.html') 
 # student login end-------------------------------------
-
-@app.route('/student_coordinator_login')
-def student_coordinator_login():
-    return "<h2>Student Coordinator Login Page</h2>"
-
-@app.route('/teacher_login')
-def teacher_login():
-    return "<h2>Teacher Login Page</h2>"
-
 
 # add department--------------------------------------------------
 
@@ -354,7 +395,6 @@ def add_student():
 
 
 #add_student_coordinator---------------------------------------------
-#add mentor----------------------------------------------------
 @app.route('/add_student_coordinator', methods=['POST'])
 def add_student_coordinator():
     # Form data
@@ -399,6 +439,54 @@ def add_student_coordinator():
     flash('Student Coordinator added successfully and login details sent!', 'success')
     return redirect(url_for('admin_dashboard'))
 #student_coordinator_end---------------------------------------------
+
+
+# teacher coordinator login and logics-----------------------------------
+@app.route('/add_teacher_coordinator', methods=['POST'])
+def add_teacher_coordinator():
+    # Form data
+    username = request.form.get('username')
+    name = request.form.get('name')
+    department = request.form.get('department')
+    contact_number = request.form.get('contact_number')
+    email = request.form.get('email')
+    address = request.form.get('address')
+    
+    
+    existing_teacher_coordinator = db['teacher_coordinator'].find_one({
+        "$or": [
+            {"username": username},
+            {"name": name},
+            {"email": email},
+            {"contact_number": contact_number}
+        ]
+    })
+    
+    if existing_teacher_coordinator:
+        flash('Teacher Coordinator with the same name, email, or contact number already exists.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    
+    password = generate_password()
+    
+    
+    teacher_coordinator_data = {
+        "username": username,
+        "name": name,
+        "department": department,
+        "contact_number": contact_number,
+        "email": email,
+        "address": address,
+        "password": password  
+    }
+    db['teacher_coordinator'].insert_one(teacher_coordinator_data)
+    
+    send_login_details(email, username, password)
+    
+    flash('Teacher Coordinator added successfully and login details sent!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+# teacher coordinator logics end------------------------------------------
 
 
 # upload document------------------------------------------------------
