@@ -3,9 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>HOD Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='hod_dashboard.css') }}">    
 </head>
 <body>
-    welcome HOD
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('hod_dashboard') }}">Home</a></li>
+            <li><a href="{{ url_for('reviews') }}">Reviews</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </nav>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="alert {{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="container">
+        <h1>Welcome Head of the Department</h1>
+        <h1>Department Projects Dashboard</h1>
+
+        <!-- Search Box -->
+        <div class="search-container">
+            <input type="text" id="searchBox" placeholder="Search projects by name, student, or department...">
+        </div>
+
+        {% if projects %}
+        <div class="table-container">
+            <table id="projectsTable">
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Student Name</th>
+                        <th>Department</th>
+                        <th>Project Description</th>
+                        <th>Team Members</th>
+                        <th>Updated At</th>
+                        <th>Write Review</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr>
+                        <td>{{ project['project_name'] }}</td>
+                        <td>{{ project['student_name'] }}</td>
+                        <td>{{ project['student_department'] }}</td>
+                        <td>{{ project['project_description'] }}</td>
+                        <td>{{ project['team_members'] }}</td>
+                        <td>{{ project['upload_date'] }}</td>
+                        <td>
+                            <!-- Review Form -->
+                            <form action="{{ url_for('hod_dashboard') }}" method="POST">
+                                <input type="hidden" name="project_id" value="{{ project['_id'] }}">
+                                <textarea name="review" placeholder="Write your review here..." required></textarea><br>
+                                <button type="submit">Submit</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No projects found.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', function () {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#projectsTable tbody tr');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+
+        // Hide flash messages after a delay
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.classList.add('hide');
+            });
+        }, 2000);
+
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => alert.remove());
+        }, 2500);
+    </script>
 </body>
 </html>

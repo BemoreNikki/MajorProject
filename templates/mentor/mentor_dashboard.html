@@ -2,10 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Mentor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='mentor_dashboard.css') }}">
 </head>
 <body>
-    HI Mentor welcome
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('mentor_dashboard') }}">Home</a></li>
+            <li><a href="{{ url_for('assigned_batch') }}">Assigned Batch</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1>Welcome Mentor, {{ mentor_name }}</h1>
+        <h3>Your Assigned Projects</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Project Name</th>
+                    <th>Student Name</th>
+                    <th>Project Description</th>
+                    <th>Document</th>
+                    <th>Approval History</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in assigned_projects %}
+                <tr>
+                    <td>{{ project.project_name }}</td>
+                    <td>{{ project.student_name }}</td>
+                    <td>{{ project.project_description }}</td>
+                    <td>
+                        {% if project.document_url %}
+                        <a href="{{ project.document_url }}" target="_blank">View Document</a>
+                        {% else %}
+                        No document available
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>Current Status:</strong> {{ project.approval_status }}<br>
+                        <strong>Comment:</strong> {{ project.comment }}<br>
+                        <strong>Timestamp:</strong> {{ project.timestamp }}<br>
+
+                        {% if project.status_updates %}
+                        <h4>Approval History:</h4>
+                        <ul>
+                            {% for update in project.status_updates %}
+                            <li><strong>{{ update.status }}</strong> - {{ update.comment }} ({{ update.timestamp }})</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form action="{{ url_for('mentor_dashboard') }}" method="POST">
+                            <input type="hidden" name="project_id" value="{{ project._id }}">
+                            <select name="approval_status">
+                                <option value="approved" {% if project.approval_status == 'approved' %}selected{% endif %}>Approved</option>
+                                <option value="rejected" {% if project.approval_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                <option value="pending" {% if project.approval_status == 'pending' %}selected{% endif %}>Pending</option>
+                            </select>
+                            <textarea name="comment">{{ project.comment }}</textarea><br>
+                            <input type="submit" value="Submit Feedback">
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
 </body>
 </html>

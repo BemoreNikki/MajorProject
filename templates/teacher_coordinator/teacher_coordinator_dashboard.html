@@ -1,11 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Teacher Coordinator Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='teacher_coordinator_dashboard.css') }}">
 </head>
+
 <body>
-    welcome to teacher Coordinator
+    <nav>
+        <ul class="navbar">
+            <li><a href="{{ url_for('teacher_coordinator_dashboard') }}">Home</a></li>
+            <li><a href="{{ url_for('project_status_list') }}">Project Status</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </nav>
+    <h1>Teacher Coordinator Dashboard</h1>
+    <h2>Department: {{ department }}</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="alert {{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <form method="GET" action="{{ url_for('teacher_coordinator_dashboard') }}" class="search-form">
+        <input type="text" name="search_query" placeholder="Search by Project Name or Student Name"
+            value="{{ request.args.get('search_query', '') }}">
+        <button type="submit">Search</button>
+    </form>
+
+    {% if projects %}
+    <table>
+        <thead>
+            <tr>
+                <th>Project Name</th>
+                <th>Student Name</th>
+                <th>Team Members</th>
+                <th>Project Description</th>
+                <th>Document</th>
+                <th>Project Status</th>
+                <th>PRC Status/Stage</th>
+                <th>Comment</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for project in projects %}
+            <tr>
+                <td>{{ project['project_name'] }}</td>
+                <td>{{ project['student_name'] }}</td>
+                <td>{{ project['team_members'] | join(', ') }}</td>
+                <td>{{ project['project_description'] }}</td>
+                <td>
+                    {% if project['document_url'] %}
+                    <a href="{{ url_for('static', filename='uploads/' + project['document_path']) }}" target="_blank">
+                        View Document
+                    </a>
+                    {% else %}
+                    No document uploaded
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="POST" action="{{ url_for('update_project_status') }}">
+                        <select name="project_status" required>
+                            <option value="">Select</option>
+                            <option value="Approve">Approve</option>
+                            <option value="Reject">Reject</option>
+                        </select>
+                </td>
+                <td>
+                    <input type="text" name="prc_status_stage" placeholder="Enter PRC Status/Stage" required />
+                </td>
+                <td>
+                    <input type="text" name="mentor_comment" placeholder="Comment" required />
+                </td>
+                <td>
+                    <input type="hidden" name="project_id" value="{{ project['_id'] }}">
+                    <button type="submit">Submit</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No projects found for your department.</p>
+    {% endif %}
+
+    <script>
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.classList.add('hide');
+            });
+        }, 2000);
+
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => alert.remove());
+        }, 2500);
+    </script>
 </body>
+
 </html>

@@ -1,0 +1,112 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+
+.navbar {
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+}
+
+.navbar ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar ul li {
+    display: inline;
+    margin-right: 10px;
+}
+
+.navbar ul li a {
+    color: white;
+    text-decoration: none;
+}
+
+.container {
+    padding: 20px;
+    background-color: white;
+    margin-top: 20px;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+button {
+    padding: 8px 16px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+.flash-messages {
+    margin: 10px auto;
+    padding: 10px;
+    max-width: 800px;
+}
+
+.alert {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 1rem;
+    text-align: center;
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+
+.alert.success {
+    background-color: #4caf50; /* Green for success */
+}
+
+.alert.error {
+    background-color: #f44336; /* Red for error */
+}
+
+.alert.info {
+    background-color: #2196f3; /* Blue for informational */
+}
+
+.alert.hide {
+    opacity: 0;
+}
+
+.search-container {
+    margin-bottom: 20px;
+    text-align: center;
+}
+.search-container input {
+    width: 50%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+h1 {
+    text-align: center;
+}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Status List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='tcd.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('teacher_coordinator_dashboard') }}">Home</a></li>
+            <li><a href="{{ url_for('project_status_list') }}">Project Status</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+         <!-- Search Bar -->
+         <form method="GET" action="{{ url_for('project_status_list') }}" class="search-form">
+            <input 
+                type="text" 
+                name="search_query" 
+                placeholder="Search by Project Name or Student Name" 
+                value="{{ request.args.get('search_query', '') }}">
+            <button type="submit">Search</button>
+        </form>
+        <h1>Project Status List</h1>
+        {% if project_status_list %}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Student Name</th>
+                        <th>Project Status</th>
+                        <th>PRC Status/Stage</th>
+                        <th>Mentor Comment</th>
+                        <th>Updated By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in project_status_list %}
+                    <tr>
+                        <td>{{ project['project_name'] }}</td>
+                        <td>{{ project['student_name'] }}</td>
+                        <td>{{ project['project_status'] }}</td>
+                        <td>{{ project['prc_status_stage'] }}</td>
+                        <td>{{ project['mentor_comment'] }}</td>
+                        <td>{{ project['updated_by'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No project statuses available.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

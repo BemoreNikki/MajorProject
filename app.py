@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory
 from pymongo import MongoClient
 
 import random
@@ -11,13 +11,21 @@ from bson import ObjectId
 from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
+from datetime import timedelta
+import os
+from werkzeug.utils import secure_filename
+
+
 
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
+app.permanent_session_lifetime = timedelta(minutes=30)
 
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin"
+
+
 
 def generate_password(length=8):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -46,6 +54,20 @@ client = MongoClient("mongodb://localhost:27017/")
 db = client.gnits_project_management
 departments_collection = db.department
 
+
+UPLOAD_FOLDER = 'static/uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+    
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -69,15 +91,15 @@ def admin_login():
 
 @app.route('/admin_dashboard')
 def admin_dashboard():
-    # Check if admin is logged in
+    
     if not session.get('admin_logged_in'):
         flash('Please log in to access the admin dashboard.', 'warning')
         return redirect(url_for('admin_login'))
     
-    # Fetch department names from MongoDB for the dropdown
+    
     departments = [dept['name'] for dept in db['department'].find()]
     
-    # Render dashboard with departments
+    
     return render_template('admin/admin_dashboard.html', departments=departments)
 
 
@@ -86,27 +108,131 @@ def admin_dashboard():
 @app.route('/hod_login', methods=['GET', 'POST'])
 def hod_login():
     if request.method == 'POST':
-        # Get form data
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        # Check if the username exists in the database
-        hod = db['hod'].find_one({"username": username})
-        
-        if hod and hod['password'] == password:  # Verify password match
+        username = request.form['username']
+        password = request.form['password']
+
+        # Check credentials
+        hod = db.hod.find_one({'username': username, 'password': password})
+        if hod:
+            # Set session on successful login
             session['hod_logged_in'] = True
+            session['hod'] = {
+                'username': hod['username'],
+                'department': hod['department']
+            }
             flash('Login successful!', 'success')
-            return redirect(url_for('hod_dashboard'))  # Redirect to HOD dashboard (you can create this route)
+            return redirect(url_for('hod_dashboard'))
         else:
-            flash('Invalid username or password. Please try again.', 'danger')
-            return redirect(url_for('hod_login'))  # Redirect back to login page
-    
-    return render_template('hod/hod_login.html')  # Render HOD login page
+            flash('Invalid username or password.', 'danger')
+    return render_template('/hod/hod_login.html')
 
 
-@app.route('/hod_dashboard')
+
+@app.route('/hod_dashboard', methods=['GET', 'POST'])
 def hod_dashboard():
-    return render_template('hod/hod_dashboard.html') 
+    if not session.get('hod_logged_in'):
+        flash('Please log in to perform this action.', 'danger')
+        return redirect(url_for('hod_login'))
+
+    try:
+        
+        projects = list(db.projects.find().sort('updated_at', -1))
+
+        if not projects:
+            flash('No projects found.', 'info')
+
+        
+        for project in projects:
+            student_username = project.get('student_username')
+            student = db.students.find_one({'username': student_username})
+            project['student_department'] = student.get('department', 'Not Found') if student else 'Unknown'
+
+        
+        if request.method == 'POST':
+            project_id = request.form.get('project_id')  
+            review_text = request.form.get('review')    
+
+            if project_id and review_text:
+                
+                project = db.projects.find_one({'_id': ObjectId(project_id)})
+
+                if project:
+                    
+                    review_data = {
+                        'project_id': str(project['_id']),
+                        'project_name': project.get('project_name', ''),
+                        'student_name': project.get('student_name', ''),
+                        'student_department': project.get('student_department', ''),
+                        'project_description': project.get('project_description', ''),
+                        'team_members': project.get('team_members', ''),
+                        'upload_date': project.get('upload_date', ''),
+                        'review_text': review_text,
+                        'reviewed_by': session['hod']['username'],  
+                        'review_date': datetime.now()
+                    }
+
+                    
+                    db.reviews.update_one(
+                        {'project_id': str(project['_id'])},  
+                        {'$set': review_data},               
+                        upsert=True                          
+                    )
+                    flash('Review submitted successfully and updated if already existed.', 'success')
+                else:
+                    flash('Project not found.', 'danger')
+            else:
+                flash('Please provide a valid project and review.', 'warning')
+
+        # Render the dashboard
+        return render_template('hod/hod_dashboard.html', projects=projects)
+
+    except Exception as e:
+        flash(f'An error occurred while fetching projects: {str(e)}', 'danger')
+        return render_template('hod/hod_dashboard.html', projects=[])
+
+
+@app.route('/view_project/<project_id>', methods=['GET'])
+def view_project(project_id):
+    try:
+        
+        project = db.projects.find_one({'_id': ObjectId(project_id)})
+        if not project:
+            flash('Project not found.', 'danger')
+            return redirect(url_for('hod_dashboard'))
+    except Exception as e:
+        flash(f'An error occurred while fetching project details: {str(e)}', 'danger')
+        return redirect(url_for('hod_dashboard'))
+
+    return render_template('view_project.html', project=project)
+
+    
+    
+@app.route('/reviews', methods=['GET'])
+def reviews():
+    try:
+        
+        reviews = list(db.reviews.find()) 
+
+        
+        return render_template('hod/reviews.html', reviews=reviews)
+
+    except Exception as e:
+        flash(f'An error occurred while fetching reviews: {str(e)}', 'danger')
+        return render_template('hod/reviews.html', reviews=[])
+    
+ 
+@app.route('/public_reviews', methods=['GET'])
+def public_reviews():
+    try:
+        
+        reviews = list(db.reviews.find()) 
+
+        
+        return render_template('public_reviews.html', reviews=reviews)
+
+    except Exception as e:
+        flash(f'An error occurred while fetching reviews: {str(e)}', 'danger')
+        return render_template('public_reviews.html', reviews=[])
 
 # end of hod_login------------------------------------------------------------
 
@@ -116,22 +242,158 @@ def mentor_login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
+
+        # Find the mentor by username
         mentor = db['mentor'].find_one({"username": username})
-        
+
         if mentor and mentor['password'] == password:
+            # Store mentor details in session
             session['mentor_logged_in'] = True
+            session['mentor'] = {
+                'username': mentor['username'],
+                'name': mentor['name'],
+                '_id': str(mentor['_id'])  # Save the mentor's unique ID for later use
+            }
             flash('Login successful!', 'success')
             return redirect(url_for('mentor_dashboard'))
         else:
-            flash('Invalid username or password. Plese try again.', 'danger')
+            flash('Invalid username or password. Please try again.', 'danger')
             return redirect(url_for('mentor_login'))
+
     return render_template('mentor/mentor_login.html')
 
 
-@app.route('/mentor_dashboard')
+
+@app.route('/mentor_dashboard', methods=['GET', 'POST'])
 def mentor_dashboard():
-    return render_template('mentor/mentor_dashboard.html')
+    
+    if not session.get('mentor_logged_in'):
+        flash('Please log in to access the dashboard.', 'warning')
+        return redirect(url_for('mentor_login'))
+
+    mentor = session.get('mentor')
+    mentor_id = mentor.get('_id')  
+
+    
+    assigned_projects = list(db.assigned_projects.find({"mentor_id": mentor_id}))
+
+    
+    for project in assigned_projects:
+        
+        student = db.students.find_one({"username": project['student_username']})
+        if student:
+            project['student_name'] = student.get('student_name', 'Unknown')
+        else:
+            project['student_name'] = 'Unknown'
+
+        
+        if 'document_path' in project:
+            project['document_url'] = os.path.join(UPLOAD_FOLDER, project['document_path'])
+        else:
+            project['document_url'] = None
+
+        
+        feedback = db.mentor_feedback.find_one({"project_id": project['_id'], "mentor_id": mentor_id})
+        if feedback:
+            
+            project['approval_status'] = feedback.get('status', 'pending')  
+            project['comment'] = feedback.get('comment', '')
+            project['timestamp'] = feedback.get('timestamp', '')
+        else:
+            project['approval_status'] = 'pending'  
+            project['comment'] = ''
+            project['timestamp'] = ''
+
+    
+    if request.method == 'POST':
+        project_id = request.form.get('project_id')
+        approval_status = request.form.get('approval_status')
+        comment = request.form.get('comment')
+
+        
+        if not project_id or not approval_status:
+            flash('Project ID and approval status are required.', 'danger')
+            return redirect(url_for('mentor_dashboard'))
+
+        
+        feedback = db.mentor_feedback.find_one({"project_id": ObjectId(project_id), "mentor_id": mentor_id})
+
+        if feedback:
+            
+            db.mentor_feedback.update_one(
+                {'_id': feedback['_id']},
+                {'$set': {
+                    'status': approval_status,
+                    'comment': comment,
+                    'timestamp': datetime.utcnow()
+                }}
+            )
+        else:
+            
+            db.mentor_feedback.insert_one({
+                'project_id': ObjectId(project_id),
+                'mentor_id': mentor_id,
+                'status': approval_status,
+                'comment': comment,
+                'timestamp': datetime.utcnow()
+            })
+
+        flash('Your feedback has been submitted successfully!', 'success')
+        return redirect(url_for('mentor_dashboard'))
+
+    return render_template(
+        'mentor/mentor_dashboard.html',
+        assigned_projects=assigned_projects,
+        mentor_name=mentor.get('name')  
+    )
+
+
+@app.route('/assigned_batch')
+def assigned_batch():
+    
+    if not session.get('mentor_logged_in'):
+        flash('Please log in to access the assigned batch.', 'warning')
+        return redirect(url_for('mentor_login'))
+
+    mentor = session.get('mentor')
+    mentor_id = mentor.get('_id')  
+
+    
+    assigned_projects = list(db.assigned_projects.find({"mentor_id": mentor_id}))
+
+    
+    for project in assigned_projects:
+        
+        student = db.students.find_one({"username": project['student_username']})
+        if student:
+            project['student_name'] = student.get('student_name', 'Unknown')
+        else:
+            project['student_name'] = 'Unknown'
+
+        if 'document_path' in project:
+            project['document_url'] = os.path.join(UPLOAD_FOLDER, project['document_path'])
+        else:
+            project['document_url'] = None
+
+        feedback = db.mentor_feedback.find_one({"project_id": project['_id'], "mentor_id": mentor_id})
+        if feedback:
+            project['approval_status'] = feedback.get('status', 'pending')  # Default to 'pending'
+            project['comment'] = feedback.get('comment', '')
+            project['timestamp'] = feedback.get('timestamp', '')
+        else:
+            project['approval_status'] = 'pending'  
+            project['comment'] = ''
+            project['timestamp'] = ''
+
+    
+    return render_template(
+        'mentor/assigned_batch.html',  
+        assigned_projects=assigned_projects,
+        mentor_name=mentor.get('name') 
+    )
+
+
+
 
 #mentor logics end ---------------------------------------------------------
 
@@ -156,7 +418,15 @@ def student_coordinator_login():
 
 @app.route('/student_coordinator_dashboard')
 def student_coordinator_dashboard():
-    return render_template('student_coordinator/student_coordinator_dashboard.html')
+    try:
+        
+        project_status = list(db.project_status.find())  
+
+        return render_template('student_coordinator/student_coordinator_dashboard.html', project_status=project_status)
+
+    except Exception as e:
+        flash(f'An error occurred while fetching reviews: {str(e)}', 'danger')
+        return render_template('student_coordinator/student_coordinator_dashboard.html', project_status=[])
 
 #student coordinator logics end ---------------------------------------------------------
 
@@ -168,21 +438,158 @@ def teacher_coordinator_login():
         username = request.form.get('username')
         password = request.form.get('password')
         
+        
         teacher_coordinator = db['teacher_coordinator'].find_one({"username": username})
         
         if teacher_coordinator and teacher_coordinator['password'] == password:
+           
+            session['teacher_coordinator'] = {
+                'username': teacher_coordinator['username'],
+                'department': teacher_coordinator['department']
+            }
             session['teacher_coordinator_logged_in'] = True
             flash('Login successful!', 'success')
             return redirect(url_for('teacher_coordinator_dashboard'))
         else:
-            flash('Invalid username or password. Plese try again.', 'danger')
+            flash('Invalid username or password. Please try again.', 'danger')
             return redirect(url_for('teacher_coordinator_login'))
+    
     return render_template('teacher_coordinator/teacher_coordinator_login.html')
 
 
-@app.route('/teacher_coordinator_dashboard')
+
+@app.route('/teacher_coordinator_dashboard', methods=['GET'])
 def teacher_coordinator_dashboard():
-    return render_template('teacher_coordinator/teacher_coordinator_dashboard.html')
+    
+    if not session.get('teacher_coordinator_logged_in'):
+        flash('Please log in to access the dashboard.', 'warning')
+        return redirect(url_for('teacher_coordinator_login'))
+
+    
+    teacher_coordinator = session.get('teacher_coordinator')
+    if not teacher_coordinator:
+        flash('Invalid session. Please log in again.', 'danger')
+        return redirect(url_for('teacher_coordinator_login'))
+
+    
+    coordinator_department = teacher_coordinator.get('department')
+
+    
+    students_in_department = list(db.students.find({"department": coordinator_department}, {"username": 1, "student_name": 1, "_id": 0}))
+
+    
+    student_username_to_name = {student['username']: student.get('student_name', 'Unknown') for student in students_in_department}
+
+    
+    search_query = request.args.get('search_query', '').strip()
+
+    
+    query_filter = {"student_username": {"$in": list(student_username_to_name.keys())}}
+
+    
+    if search_query:
+        query_filter['$or'] = [
+            {'project_name': {'$regex': search_query, '$options': 'i'}},  
+            {'student_name': {'$regex': search_query, '$options': 'i'}}   
+        ]
+
+    
+    projects = list(db.projects.find(query_filter))
+
+    
+    for project in projects:
+        project['student_name'] = student_username_to_name.get(project['student_username'], 'Unknown')
+
+        
+        if 'document_path' in project:
+            project['document_url'] = os.path.join(UPLOAD_FOLDER, project['document_path'])
+        else:
+            project['document_url'] = None
+
+    return render_template(
+        'teacher_coordinator/teacher_coordinator_dashboard.html',
+        projects=projects,
+        department=coordinator_department
+    )
+
+
+#------------------------Project Status------------------------------
+@app.route('/update_project_status', methods=['POST'])
+def update_project_status():
+    if not session.get('teacher_coordinator_logged_in'):
+        flash('Please log in to perform this action.', 'danger')
+        return redirect(url_for('teacher_coordinator_login'))
+
+    project_id = request.form.get('project_id')
+    project_status = request.form.get('project_status')
+    prc_status_stage = request.form.get('prc_status_stage')
+    mentor_comment = request.form.get('mentor_comment')
+
+    if not project_id or not project_status or not prc_status_stage or not mentor_comment:
+        flash('All fields are required.', 'danger')
+        return redirect(url_for('teacher_coordinator_dashboard'))
+
+    
+    project = db.projects.find_one({'_id': ObjectId(project_id)})
+    if not project:
+        flash('Project not found.', 'danger')
+        return redirect(url_for('teacher_coordinator_dashboard'))
+    
+    result = db.project_status.update_one(
+        {'project_id': project_id},  
+        {
+            '$set': {  
+                'project_name': project['project_name'],
+                'student_name': project['student_name'],
+                'project_status': project_status,
+                'prc_status_stage': prc_status_stage,
+                'mentor_comment': mentor_comment,
+                'updated_by': session.get('teacher_coordinator')['username'],
+                'updated_at': datetime.utcnow()
+            }
+        },
+        upsert=True
+    )
+
+    if result.matched_count > 0:
+        flash('Project status updated successfully!', 'success')
+    else:
+        flash('Project status added successfully!', 'success')
+
+    return redirect(url_for('teacher_coordinator_dashboard'))
+#------------------------Project Status End---------------------------
+
+
+#-----------------project_status_list------------------------------------
+@app.route('/project_status_list', methods=['GET'])
+def project_status_list():
+    
+    if not session.get('teacher_coordinator_logged_in'):
+        flash('Please log in to perform this action.', 'danger')
+        return redirect(url_for('teacher_coordinator_login'))
+
+    teacher_coordinator = session.get('teacher_coordinator')
+    
+    
+    if not teacher_coordinator:
+        flash('Invalid session. Please log in again.', 'danger')
+        return redirect(url_for('teacher_coordinator_login'))
+
+    try:
+        
+        project_status_list = list(db.project_status.find())
+
+        
+        return render_template('teacher_coordinator/tcd.html', project_status_list=project_status_list)
+
+    except Exception as e:
+        
+        flash(f'An error occurred while fetching project statuses: {str(e)}', 'danger')
+        return render_template('teacher_coordinator/tcd.html', project_status_list=[])
+
+#-----------------------project_status_list_end-------------------------------------------
+
+
 # teacher coordinator login end -----------------------------------
 
 # student login--------------------------------------
@@ -200,7 +607,7 @@ def student_login():
             session['user_id'] = str(students['_id'])
             projects = db['projects'].find({"student_username": session.get('user_id')})
 
-            # Convert the cursor to a list of projects
+            
             projects = list(projects)
             flash('Login successful!', 'success')
             return redirect(url_for('student_dashboard')) 
@@ -215,7 +622,37 @@ def student_login():
 
 @app.route('/student_dashboard')
 def student_dashboard():
-    return render_template('student/student_dashboard.html') 
+    return render_template('student/student_dashboard.html')
+
+
+
+
+@app.route('/project_status')
+def project_status():
+    mentor_feedback = list(db.mentor_feedback.find())
+
+    feedback_data = []
+    for feedback in mentor_feedback:
+        assigned_project = db.assigned_projects.find_one({"_id": feedback.get('project_id')})
+
+        if assigned_project:
+            project_name = assigned_project.get('project_name', 'Unknown')  
+        else:
+            project_name = 'Unknown'
+
+        feedback_data.append({
+            'project_name': project_name,
+            'status': feedback.get('status', 'pending'),
+            'comment': feedback.get('comment', 'No comments provided'),
+            'timestamp': feedback.get('timestamp', 'Not available'),
+        })
+
+    return render_template(
+        'student/project_status.html',  
+        feedback_data=feedback_data  
+    )
+
+ 
 # student login end-------------------------------------
 
 # add department--------------------------------------------------
@@ -226,7 +663,7 @@ def add_department():
         department_name = request.form.get('department_name')
         
         if department_name:
-            # Insert into MongoDB
+           
             department_data = {'name': department_name}
             departments_collection.insert_one(department_data)
             flash('Department added successfully!', 'success')
@@ -250,7 +687,7 @@ def add_hod():
     email = request.form.get('email')
     address = request.form.get('address')
     
-    # Check if HOD with the same name, email, or contact number already exists
+    
     existing_hod = db['hod'].find_one({
         "$or": [
             {"name": name},
@@ -263,10 +700,10 @@ def add_hod():
         flash('An HOD with the same name, email, or contact number already exists.', 'danger')
         return redirect(url_for('admin_dashboard'))
 
-    # Generate random password
+    
     password = generate_password()
     
-    # Insert HOD into MongoDB
+    
     hod_data = {
         "username": username,
         "name": name,
@@ -274,11 +711,11 @@ def add_hod():
         "contact_number": contact_number,
         "email": email,
         "address": address,
-        "password": password  # Store hashed password in production
+        "password": password  
     }
     db['hod'].insert_one(hod_data)
     
-    # Send email with login details
+    
     send_login_details(email, username, password)
     
     flash('HOD added successfully and login details sent!', 'success')
@@ -289,7 +726,7 @@ def add_hod():
 #add mentor----------------------------------------------------
 @app.route('/add_mentor', methods=['POST'])
 def add_mentor():
-    # Form data
+    
     username = request.form.get('username')
     name = request.form.get('name')
     department = request.form.get('department')
@@ -333,6 +770,65 @@ def add_mentor():
 
 #add mentor end-----------------------------------------------------
 
+#------------------assign_project-----------------------------
+@app.route('/assign_project', methods=['GET'])
+def assign_project_get():
+    if not session.get('admin_logged_in'):  
+        flash('Please log in as an admin to access this page.', 'danger')
+        return redirect(url_for('admin_login'))
+
+    projects = list(db.projects.find({}, {"_id": 1, "project_name": 1, "student_name": 1, "student_username": 1, "project_description": 1, "team_members": 1, "document_path": 1, "upload_date": 1, "mentor_id": 1}))
+
+    mentors = list(db.mentor.find({}, {"_id": 1, "name": 1}))
+
+    return render_template('admin/assign_project.html', projects=projects, mentors=mentors)
+
+
+@app.route('/assign_project', methods=['POST'])
+def assign_project_post():
+    if not session.get('admin_logged_in'):
+        return jsonify({"message": "Please log in as an admin to access this page."}), 403
+
+    data = request.get_json()
+    project_id = data.get('project_id')
+    mentor_id = data.get('mentor_id')
+
+    if not project_id or not mentor_id:
+        return jsonify({"message": "Project ID and Mentor ID are required."}), 400
+
+    project = db.projects.find_one({"_id": ObjectId(project_id), "mentor_id": None})
+    mentor = db.mentor.find_one({"_id": ObjectId(mentor_id)})
+
+    if not project:
+        return jsonify({"message": "Project not found or already assigned."}), 404
+    if not mentor:
+        return jsonify({"message": "Mentor not found."}), 404
+
+    db.projects.update_one({"_id": ObjectId(project_id)}, {"$set": {"mentor_id": mentor_id}})
+
+    assignment_data = {
+        "project_id": str(project_id),  
+        "mentor_id": str(mentor_id),   
+        "student_username": project.get('student_username'),
+        "student_name": project.get('student_name'),
+        "project_name": project.get('project_name'),
+        "project_description": project.get('project_description'),
+        "team_members": project.get('team_members'),
+        "document_path": project.get('document_path'),
+        "upload_date": project.get('upload_date'),
+        "mentor_name": mentor.get('name'),
+        "assigned_at": datetime.now()
+    }
+
+    db.assigned_projects.insert_one(assignment_data)
+
+    return jsonify({"message": "Project assigned successfully!"}), 200
+
+
+
+
+#---------------------end_of_assign_project------------------------------------------
+
 
 #add student----------------------------------------------------------
 @app.route('/add_student', methods=['GET', 'POST'])
@@ -351,7 +847,6 @@ def add_student():
         from_year = request.form.get('from_year')
         to_year = request.form.get('to_year')
 
-        # Check if a student with the same roll number or email already exists
         existing_student = db['students'].find_one({
             "$or": [
                 {"roll_number": roll_number},
@@ -367,7 +862,6 @@ def add_student():
         
         password = generate_password()
 
-        # Insert student into MongoDB
         student_data = {
             "username": username,
             "student_name": student_name,
@@ -492,17 +986,8 @@ def add_teacher_coordinator():
 # upload document------------------------------------------------------
 
 
-# Ensure the uploads directory exists
-UPLOAD_FOLDER = 'static/uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
 
-# Allowed file extensions for document upload
-ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
 
-# Helper function to check if the uploaded file is valid
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/upload_document', methods=['POST'])
 def upload_document():
@@ -510,36 +995,36 @@ def upload_document():
         flash('You need to log in first.', 'danger')
         return redirect(url_for('student_login'))
 
-    # Debugging step: Print session user_id
+    
     print("Session User ID:", session.get('user_id'))
     
     if request.method == 'POST':
-        # Get form data
+        
         project_name = request.form['project_name']
         project_description = request.form['project_description']
         team_members = request.form.getlist('team_members[]')
         document = request.files['document']
 
-        # Ensure a document is uploaded
+        
         if not document or document.filename == '':
             flash('No document selected!', 'danger')
             return redirect(url_for('student_dashboard'))
 
-        # Check if the file has an allowed extension
+        
         if not allowed_file(document.filename):
             flash('Invalid file type. Only PDF and Word documents are allowed.', 'danger')
             return redirect(url_for('student_dashboard'))
 
-        # Secure and save the document
+        
         filename = secure_filename(document.filename)
-        document_path = os.path.join('static', 'uploads', filename)  # Save under static/uploads/
+        document_path = os.path.join('static', 'uploads', filename)  
         document.save(document_path)
 
-        # Get logged-in user's details (assuming you have a function to get the user from session)
+        
         user_id = session.get('user_id')
         if user_id:
             try:
-                user = db['students'].find_one({"_id": ObjectId(user_id)})  # Convert to ObjectId
+                user = db['students'].find_one({"_id": ObjectId(user_id)})  
             except Exception as e:
                 print("Error querying database:", e)
                 user = None
@@ -550,39 +1035,35 @@ def upload_document():
             flash('User not found!', 'danger')
             return redirect(url_for('student_login'))
 
-        # Prepare the document data to store in MongoDB
+        
         document_data = {
-            'student_username': user['username'],  # Store logged-in student username
-            'student_name': user['student_name'],  # Store logged-in student name
+            'student_username': user['username'],  
+            'student_name': user['student_name'],  
             'project_name': project_name,
             'project_description': project_description,
             'team_members': team_members,
             'document_path': os.path.join('uploads', filename),
-            'upload_date': datetime.utcnow()  # Store the current date and time
+            'upload_date': datetime.utcnow()  
         }
 
-        # Insert the document data into MongoDB
+        
         db['projects'].insert_one(document_data)
 
         flash('Document uploaded successfully!', 'success')
         return redirect(url_for('student_dashboard'))
 
 
-# Helper function to get the logged-in user
+
 def get_logged_in_user():
     user_id = session.get('user_id')
     if user_id:
-        user = db['students'].find_one({"_id": ObjectId(user_id)})  # Query by user_id to fetch the user details
-    return None  # Return None if no user is logged in
+        user = db['students'].find_one({"_id": ObjectId(user_id)})  
+    return None  
 
 
 # end of upload document
 
-
-
-
-
-# update project details----------------------------------------------------------
+# -------------------------------update project details----------------------------------------------------
 
 
 @app.route('/update_project', methods=['GET'])
@@ -625,17 +1106,15 @@ def edit_project(project_id):
         # Check if a document is uploaded
         document = request.files.get('document')
         if document:
-            # Ensure the file is of allowed type (e.g., PDF, Word)
             if not allowed_file(document.filename):
                 flash('Invalid file type. Only PDF and Word documents are allowed.', 'danger')
                 return redirect(url_for('edit_project', project_id=project_id))
 
             # Secure and save the document
             filename = secure_filename(document.filename)
-            document_path = os.path.join('static', 'uploads', filename)  # Save under static/uploads/
+            document_path = os.path.join('static', 'uploads', filename)  
             document.save(document_path)
 
-            # Add document path to the project data
             project_data = {
                 'document_path': document_path
             }
@@ -674,7 +1153,7 @@ def delete_project(project_id):
     except Exception as e:
         flash(f'Error deleting project: {e}', 'danger')
     
-    return redirect(url_for('update_project'))  # Redirect back to the project list
+    return redirect(url_for('update_project'))  
 
 
 
@@ -686,10 +1165,10 @@ def delete_project(project_id):
 #my team-----------------------------
 @app.route('/my_team')
 def my_team():
-    # Fetch all projects from the database
-    projects = list(db.projects.find())  # Replace with your database query
     
-    # Format the data to include project name with team members
+    projects = list(db.projects.find()) 
+    
+    
     project_teams = [
         {"project_name": project['project_name'], "team_members": project.get('team_members', [])}
         for project in projects

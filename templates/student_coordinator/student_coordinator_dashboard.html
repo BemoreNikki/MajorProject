@@ -3,9 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Project Status List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='tcd.css') }}">    
 </head>
 <body>
-    welcome studentco
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('student_coordinator_dashboard') }}">Home</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </nav>
+    <h1>Student Coordinator Dashboard</h1>
+    <div class="container">
+        <h1>Project Status List</h1>
+        <!-- Search Bar -->
+        <div>
+            <input
+                type="text"
+                id="searchInput"
+                onkeyup="filterTable()"
+                placeholder="Search for projects or students..."
+                style="width: 100%; padding: 8px; margin-bottom: 10px;"
+            >
+        </div>
+
+        {% if project_status %}
+        <table border="1" id="statusTable">
+            <thead>
+                <tr>
+                    <th>Project Name</th>
+                    <th>Student Name</th>
+                    <th>PRC Stage</th>
+                    <th>Status</th>
+                    <th>Updated At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in project_status %}
+                <tr>
+                    <td>{{ project.get('project_name', 'N/A') }}</td>
+                    <td>{{ project.get('student_name', 'N/A') }}</td>
+                    <td>{{ project.get('prc_status_stage', 'N/A') }}</td>
+                    <td>{{ project.get('project_status', 'N/A') }}</td>
+                    <td>{{ project.get('updated_at', 'N/A') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No project statuses found.</p>
+        {% endif %}
+    </div>
+    <script>
+        
+        function filterTable() {
+            const input = document.getElementById("searchInput");
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById("statusTable");
+            const rows = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName("td");
+                let rowMatches = false;
+
+                for (let j = 0; j < cells.length; j++) {
+                    if (cells[j].innerText.toLowerCase().includes(filter)) {
+                        rowMatches = true;
+                        break;
+                    }
+                }
+
+                rows[i].style.display = rowMatches ? "" : "none";
+            }
+        }
+    </script>
 </body>
 </html>

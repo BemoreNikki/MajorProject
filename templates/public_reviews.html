@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOD Review List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='student_dashboard.css') }}">   
+</head>
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('student_dashboard')}}">Home</a></li>
+            <li><a href="{{ url_for('logout')}}">Logout</a></li>
+        </ul>
+    </nav>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="alert {{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="container">
+        <h1>Review List</h1>
+
+        <!-- Search Box -->
+        <div class="search-container">
+            <input type="text" id="searchBox" placeholder="Search reviews by project, student, or department...">
+        </div>
+
+        {% if reviews %}
+        <div class="table-container">
+            <table id="reviewsTable">
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Student Name</th>
+                        <th>Department</th>
+                        <th>Project Description</th>
+                        <th>Team Members</th>
+                        <th>Review</th>
+                        <th>Reviewed By</th>
+                        <th>Review Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for review in reviews %}
+                    <tr>
+                        <td>{{ review['project_name'] }}</td>
+                        <td>{{ review['student_name'] }}</td>
+                        <td>{{ review['student_department'] }}</td>
+                        <td>{{ review['project_description'] }}</td>
+                        <td>{{ review['team_members'] }}</td>
+                        <td>{{ review['review_text'] }}</td>
+                        <td>{{ review['reviewed_by'] }}</td>
+                        <td>{{ review['review_date'].strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No reviews found.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', function () {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#reviewsTable tbody tr');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+
+        // Hide flash messages after a delay
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.classList.add('hide');
+            });
+        }, 2000);
+
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => alert.remove());
+        }, 2500);
+    </script>
+</body>
+</html>

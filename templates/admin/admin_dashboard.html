@@ -66,8 +66,9 @@
                             {% endfor %}
                         </select>
 
-                        <label for="contact">Contact Number</label>
-                        <input type="text" id="contact" name="contact" required>
+                        <!-- Contact Number -->
+                        <label for="contact_number">Contact Number</label>
+                        <input type="text" id="contact_number" name="contact_number" required>
 
                         <label for="email">Email</label>
                         <input type="email" id="email" name="email" required>
@@ -80,11 +81,11 @@
                 </div>
             </div>
             <!-- ---------------------------------------------------------------------- -->
-            <div class="card">
+            <!-- <div class="card">
                 <i class="fas fa-user-edit"></i>
                 <h3>Update HOD</h3>
                 <a href="/update_hod" class="btn">Update</a>
-            </div>
+            </div> -->
             <!-- mentor -->
             <div class="card" onclick="openMentorModal()">
                 <i class="fas fa-user-tie"></i>
@@ -110,8 +111,9 @@
                             {% endfor %}
                         </select>
 
-                        <label for="contact">Contact Number</label>
-                        <input type="text" id="contact" name="contact" required>
+                        <!-- Contact Number -->
+                        <label for="contact_number">Contact Number</label>
+                        <input type="text" id="contact_number" name="contact_number" required>
 
                         <label for="email">Email</label>
                         <input type="email" id="email" name="email" required>
@@ -123,12 +125,17 @@
                     </form>
                 </div>
             </div>
-            <!-- mentor end -->
             <div class="card">
+                <i class="fas fa-user-graduate"></i>
+                <h3>Assign Project to Mentor</h3>
+                <a href="/assign_project" class="btn">Add</a>
+            </div>
+            <!-- mentor end -->
+            <!-- <div class="card">
                 <i class="fas fa-user-edit"></i>
                 <h3>Update Mentor</h3>
                 <a href="/update_mentor" class="btn">Update</a>
-            </div>
+            </div> -->
             <!-- add student -->
             <!-- Add Student Card -->
             <div class="card" onclick="openStudentModal()">
@@ -196,11 +203,11 @@
                 </div>
             </div>
             <!-- add student end -->
-            <div class="card">
+            <!-- <div class="card">
                 <i class="fas fa-user-edit"></i>
                 <h3>Update Student</h3>
                 <a href="/update_student" class="btn">Update</a>
-            </div>
+            </div> -->           
 
             <!-- Add Student Coordinator -->
             <div class="card" onclick="openStudentcoModal()">
@@ -227,8 +234,9 @@
                             {% endfor %}
                         </select>
 
-                        <label for="contact">Contact Number</label>
-                        <input type="text" id="contact" name="contact" required>
+                        <!-- Contact Number -->
+                        <label for="contact_number">Contact Number</label>
+                        <input type="text" id="contact_number" name="contact_number" required>
 
                         <label for="email">Email</label>
                         <input type="email" id="email" name="email" required>
@@ -241,11 +249,11 @@
                 </div>
             </div>
              <!-- Student Coordinator End -->
-            <div class="card">
+            <!-- <div class="card">
                 <i class="fas fa-user-edit"></i>
                 <h3>Update Student Coordinator</h3>
                 <a href="/update_student_coordinator" class="btn">Update</a>
-            </div>
+            </div> -->
 
             <!-- Add Teacher Coordinator -->
             <div class="card" onclick="openTeachercoModal()">
@@ -272,8 +280,9 @@
                             {% endfor %}
                         </select>
 
-                        <label for="contact">Contact Number</label>
-                        <input type="text" id="contact" name="contact" required>
+                        <!-- Contact Number -->
+                        <label for="contact_number">Contact Number</label>
+                        <input type="text" id="contact_number" name="contact_number" required>
 
                         <label for="email">Email</label>
                         <input type="email" id="email" name="email" required>
@@ -286,11 +295,11 @@
                 </div>
             </div>
              <!-- Teacher Coordinator End -->
-            <div class="card">
+            <!-- <div class="card">
                 <i class="fas fa-user-edit"></i>
                 <h3>Update Teacher Coordinator</h3>
                 <a href="/update_teacher_coordinator" class="btn">Update</a>
-            </div>
+            </div> -->
 
             <div class="card" id="addDepartmentCard">
                 <i class="fas fa-building"></i>
@@ -310,11 +319,11 @@
                     </form>
                 </div>
             </div>
-            <div class="card">
+            <!-- <div class="card">
                 <i class="fas fa-edit"></i>
                 <h3>Update Department</h3>
                 <a href="/update_department" class="btn">Update</a>
-            </div>
+            </div> -->
         </div>
     </div>
 

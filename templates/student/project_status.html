@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Status</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <!-- Include custom styles if your existing theme has a stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='student_dashboard.css') }}">    
+</head>
+<header>
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('student_dashboard')}}">Home</a></li>
+            <li><a href="{{ url_for('logout')}}">Logout</a></li>
+        </ul>
+    </nav>
+</header>
+<body class="bg-light">
+    <div class="container py-5">
+        <h1 class="mb-4 text-center">Project Status</h1>
+
+        {% if feedback_data %}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Status</th>
+                        <th>Comment</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feedback in feedback_data %}
+                        <tr>
+                            <td>{{ feedback.project_name }}</td>
+                            <td>{{ feedback.status }}</td>
+                            <td>{{ feedback.comment }}</td>
+                            <td>{{ feedback.timestamp }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No feedback found.</p>
+    {% endif %}
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

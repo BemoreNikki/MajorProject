@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assign Projects</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin_dashboard.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>Assign Projects</h1>
+
+        <div class="projects-table">
+            {% if projects %}
+                <table border="1">
+                    <thead>
+                        <tr>
+                            <th>Project Name</th>
+                            <th>Student Name</th>
+                            <th>Project Description</th>
+                            <th>Team Members</th>
+                            <th>Document Path</th>
+                            <th>Upload Date</th>
+                            <th>Assign Mentor</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in projects %}
+                            <tr>
+                                <td>{{ project.project_name }}</td>
+                                <td>{{ project.student_name }}</td>
+                                <td>{{ project.project_description }}</td>
+                                <td>{{ project.team_members|join(', ') }}</td>
+                                <td><a href="{{ url_for('static', filename=project.document_path) }}" target="_blank">View Document</a></td>
+                                <td>{{ project.upload_date }}</td>
+                                <td>
+                                    <select class="mentor-select" data-project-id="{{ project['_id'] }}">
+                                        {% for mentor in mentors %}
+                                        <option value="{{ mentor['_id'] }}">{{ mentor.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <button class="assign-btn" data-project-id="{{ project['_id'] }}">
+                                        Assign
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No projects available.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function assignProject(projectId) {
+            var mentorId = document.getElementById('mentor_' + projectId).value;
+
+            if (!mentorId) {
+                alert("Please select a mentor.");
+                return;
+            }
+
+            fetch('/assign_project', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project_id: projectId,
+                    mentor_id: mentorId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();  // Reload the page to reflect the changes
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const assignButtons = document.querySelectorAll('.assign-btn');
+        
+            assignButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const projectId = button.getAttribute('data-project-id');
+                    const mentorId = document.querySelector(`.mentor-select[data-project-id="${projectId}"]`).value;
+        
+                    if (!projectId || !mentorId) {
+                        alert("Both Project and Mentor must be selected.");
+                        return;
+                    }
+        
+                    fetch('/assign_project', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ project_id: projectId, mentor_id: mentorId })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            alert(data.message); // Show success or error message
+                            if (data.message === "Project assigned successfully!") {
+                                location.reload(); // Reload the page to show updated data
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                });
+            });
+        });
+        
+        
+    </script>
+    <script>
+        fetch('/assign_project', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                project_id: projectId,
+                mentor_id: mentorId,
+            }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.message === "Project assigned successfully!") {
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        
+    </script>
+</body>
+</html>

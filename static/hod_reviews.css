@@ -1,0 +1,52 @@
+.container {
+    padding: 20px;
+}
+
+
+.navbar {
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+}
+
+.navbar ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar ul li {
+    display: inline;
+    margin-right: 10px;
+}
+
+.navbar ul li a {
+    color: white;
+    text-decoration: none;
+}
+.table-container {
+    overflow-x: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+th {
+    background-color: #f4f4f4;
+}
+.search-container {
+    margin-bottom: 20px;
+    text-align: center;
+}
+.search-container input {
+    width: 50%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
